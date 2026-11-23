@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OCC Packet and Channel Contract Specification",
+  "description": "Standardized framing and physical parameters shared between transmitter_sim and receiver_demod",
+  "packet_structure": {
+    "total_bits": 20,
+    "fields": {
+      "preamble": {
+        "bit_length": 8,
+        "fixed_pattern": "10101010",
+        "description": "Alternating synchronization sequence for clock recovery and frame alignment"
+      },
+      "node_id": {
+        "bit_length": 8,
+        "range": [0, 255],
+        "description": "Unique infrastructure transmitter / streetlight identifier"
+      },
+      "crc": {
+        "bit_length": 4,
+        "polynomial": "0x13",
+        "polynomial_bin": "10011",
+        "name": "CRC-4-ITU",
+        "description": "4-bit cyclic redundancy check over [preamble + node_id]"
+      }
+    }
+  },
+  "camera_and_optical_specs": {
+    "frame_resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "color_format": "BGR_or_Grayscale",
+    "rolling_shutter": {
+      "readout_time_per_row_us": 29.6,
+      "frame_rate_fps": 30,
+      "total_readout_rows": 1080
+    },
+    "modulation": {
+      "type": "OOK",
+      "symbol_rate_hz": 10000,
+      "min_stripe_height_px": 3.0
+    }
+  }
+}
