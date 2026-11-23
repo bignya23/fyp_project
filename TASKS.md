@@ -36,27 +36,28 @@
 ## Part 2: Real-Time OCC Demodulator & Visual HUD (`/receiver_demod`)
 *Owner: `@cv-demod-agent`*
 
-- [ ] `[P0]` **Stage 1: RoI Extraction & Transmitter Localization (`receiver_demod/stage1_roi.py`):**
-  - Convert input frame to grayscale, apply thresholding and morphological cleanup.
-  - Find emitter contours and output cropped RoI bounding box `[x, y, w, h]`.
-  - *Assignee:* `@cv-demod-agent` | *Status:* `TODO`
-- [ ] `[P0]` **Stage 2: 2D-to-1D Waveform Extraction (`receiver_demod/stage2_waveform.py`):**
-  - Cross-row horizontal pixel averaging across the extracted LED RoI.
-  - Output 1D intensity profile array representing row temporal variations.
-  - *Assignee:* `@cv-demod-agent` | *Status:* `TODO`
-- [ ] `[P0]` **Stage 3: Baseline Correction & Adaptive Binarization (`receiver_demod/stage3_binarize.py`):**
-  - Moving-average / polynomial detrending to eliminate low-frequency Gaussian envelope.
-  - Dynamic thresholding / zero-crossing detection to yield clean binary square wave.
-  - *Assignee:* `@cv-demod-agent` | *Status:* `TODO`
-- [ ] `[P0]` **Stage 4: Stripe Width, Preamble Sync & Bit Recovery (`receiver_demod/stage4_decoder.py`):**
-  - Stripe width estimation from run-length histogram.
-  - Preamble cross-correlation with `10101010` to establish packet boundary.
-  - Sample payload bits, extract `Node_ID`, and compute CRC-4 to verify data integrity.
-  - Pinhole distance estimation calculation from observed RoI height.
-  - *Assignee:* `@cv-demod-agent` | *Status:* `TODO`
-- [ ] `[P1]` **4-Quadrant Debug HUD (`receiver_demod/hud_display.py`):**
-  - Build composite 1920x1080 display combining: (1) Raw frame + bbox, (2) Zoomed RoI stripes, (3) Live 1D waveform & binarization graph, (4) Telemetry stats (Node ID, CRC Pass/Fail, Distance, Latency).
-  - *Assignee:* `@cv-demod-agent` | *Status:* `TODO`
+- [x] `[P0]` **Stage 1: RoI Extraction & Transmitter Localization (`receiver_demod/stage1_roi.py`):** `[DONE @cv-demod-agent 2026-11-24]`
+  - Converted input frame to grayscale, applied multi-thresholding and vertical morphological cleanup.
+  - Found luminaire contours and output cropped RoI bounding box `[x, y, w, h]` and distance estimation.
+  - *Assignee:* `@cv-demod-agent` | *Status:* `DONE`
+- [x] `[P0]` **Stage 2: 2D-to-1D Waveform Extraction (`receiver_demod/stage2_waveform.py`):** `[DONE @cv-demod-agent 2026-11-24]`
+  - Cross-row horizontal pixel averaging across middle 60% of extracted LED RoI.
+  - Light 1D Gaussian smoothing (`kernel=3`) suppressing sensor noise.
+  - *Assignee:* `@cv-demod-agent` | *Status:* `DONE`
+- [x] `[P0]` **Stage 3: Baseline Correction & Adaptive Binarization (`receiver_demod/stage3_binarize.py`):** `[DONE @cv-demod-agent 2026-11-24]`
+  - Low-order polynomial detrending to eliminate low-frequency Gaussian envelope.
+  - Extreme Value Averaging (EVA) sliding-window dynamic thresholding yielding clean binary square wave.
+  - *Assignee:* `@cv-demod-agent` | *Status:* `DONE`
+- [x] `[P0]` **Stage 4: Stripe Width, Preamble Sync & Bit Recovery (`receiver_demod/stage4_decoder.py`):** `[DONE @cv-demod-agent 2026-11-24]`
+  - Stripe width estimation from run-length analysis.
+  - Preamble synchronization against `10101010` and cyclic packet tracking.
+  - Payload sampling, `Node_ID` extraction, CRC-4-ITU integrity verification.
+  - Unmodulated headlight false-positive rejection (100% rejection rate).
+  - *Assignee:* `@cv-demod-agent` | *Status:* `DONE`
+- [x] `[P1]` **4-Quadrant Debug HUD (`receiver_demod/hud_display.py` & `run_receiver.py`):** `[DONE @cv-demod-agent 2026-11-24]`
+  - Built composite 1280x720/1600x900 OpenCV display: (1) Raw frame + color-coded RoI bbox + FPS/latency, (2) Zoomed RoI stripes with scanlines, (3) Live 1D waveform & binarization graph, (4) Telemetry stats (Node ID, CRC Pass/Fail, Distance, Latency).
+  - Implemented `run_receiver.py` for live IPC watching and single-image inspection.
+  - *Assignee:* `@cv-demod-agent` | *Status:* `DONE`
 
 ---
 

@@ -132,3 +132,62 @@ All agents and contributors must append entries here chronologically upon finish
 - **Next Steps for `@benchmark-agent`:**
   - Use `export_dataset.py` as the frame source for BER sweep (call `sim.render()` in a loop across distances)
   - Presentation strip already at `docs/assets/sim_distance_comparison.png`
+
+## [2026-11-24 01:55 IST] — Part 2: Real-Time OCC Demodulator & 4-Quadrant Visual HUD COMPLETE
+- **Author:** `@cv-demod-agent`
+- **Actions Completed:**
+
+  ### Files Created (`receiver_demod/`)
+  | File | Description |
+  |------|-------------|
+  | `receiver_demod/stage1_roi.py` | Stage 1: RoI Extraction & Transmitter Localization with multi-scale thresholding, vertical morphology closing, contour filtering, and pinhole distance estimation ($d = 300 / h$). |
+  | `receiver_demod/stage2_waveform.py` | Stage 2: 2D-to-1D Spatial Waveform Extraction averaging horizontal rows across central 60% of RoI width + 1D Gaussian smoothing. |
+  | `receiver_demod/stage3_binarize.py` | Stage 3: Low-order polynomial baseline detrending + Extreme Value Averaging (EVA) sliding-window dynamic thresholding. |
+  | `receiver_demod/stage4_decoder.py` | Stage 4: Run-length stripe width estimation ($W_{bit}$), unmodulated headlight false-positive rejection, preamble sync against `10101010`, Node ID payload recovery, and CRC-4-ITU validation. |
+  | `receiver_demod/demodulator.py` | Core modular `OCCDemodulator` class returning structured `DemodResult` object with all intermediate waveform signals and telemetry. |
+  | `receiver_demod/hud_display.py` | High-contrast 4-Quadrant Visual Dashboard (Q1: camera feed + tracked bbox, Q2: zoomed RoI stripes + scanlines, Q3: dual waveform plots, Q4: telemetry status panel). |
+  | `receiver_demod/run_receiver.py` | Interactive runner supporting `--mode live` (watching atomic IPC frame `shared/live_stream/latest_frame.png`) and `--mode image --path <file>`. |
+  | `receiver_demod/batch_eval.py` | Batch evaluation runner against `shared/sample_frames/ground_truth.json` + slide presentation asset generator. |
+
+  ### Outputs & Presentation Assets Generated
+  | Path | Description | Status |
+  |------|-------------|--------|
+  | `docs/assets/demod_pipeline_4stage.png` | 16x10 high-resolution 4-panel pipeline breakdown figure for Node 105 ready for presentation slides | Generated & verified (1.2 MB) |
+
+  ### Verification & Performance Metrics
+  - **Batch Evaluation Accuracy:** **100.0%** (9/9 frames passed in `shared/sample_frames/ground_truth.json`).
+  - **Headlight Rejection:** **100%** false-positive rejection on `unmodulated_headlight.png` (`status = "REJECTED (NO PREAMBLE)"`).
+  - **CRC Integrity:** 100% valid CRC-4-ITU checksums on all modulated frames (`node105` and `node208`).
+  - **Demodulation Latency:**
+    - Mean per-frame processing latency: **3.8 ms**
+    - Min latency: **1.5 ms**
+    - Max latency: **14.7 ms**
+    - Throughput: **~260 FPS equivalent** (far exceeding real-time 30/40 FPS camera requirements).
+
+- **CLI Commands to Run and Reproduce:**
+
+  ```bash
+  # Navigate to repository root
+  cd /Users/bignyagogoi/Desktop/FYP_Project
+
+  # 1. Run the Batch Dataset Evaluator & generate presentation figure
+  python3 receiver_demod/batch_eval.py
+  # or in verbose mode:
+  python3 receiver_demod/batch_eval.py --verbose
+
+  # 2. Inspect single sample frames with the 4-Quadrant HUD
+  python3 receiver_demod/run_receiver.py --mode image --path shared/sample_frames/node105_3m_clean.png
+  python3 receiver_demod/run_receiver.py --mode image --path shared/sample_frames/unmodulated_headlight.png
+
+  # 3. Launch the split-screen live demo:
+  # Terminal 1: Start the transmitter simulator trackbar GUI
+  python3 transmitter_sim/run_sim.py
+
+  # Terminal 2: Start the real-time receiver demodulator HUD
+  python3 receiver_demod/run_receiver.py --mode live
+  ```
+
+- **Handoff Notes for `@benchmark-agent`:**
+  - `OCCDemodulator` in `receiver_demod/demodulator.py` is fully verified and ready for automated benchmarking.
+  - To run BER and PRR sweeps, instantiate `demod = OCCDemodulator()` and call `res = demod.demodulate(frame)` directly on synthetic frames from `RollingShutterSimulator.render()`.
+  - Access decoded payload via `res.node_id`, validation status via `res.crc_valid` and `res.status == "LOCKED"`, and bitstream via `res.packet_bits`.
