@@ -19,6 +19,7 @@ def baseline_and_binarize(
     signal: np.ndarray,
     poly_degree: int = 2,
     eva_window: int = 20,
+    enable_detrending: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Fits baseline envelope, detrends, and adaptively binarizes 1D waveform.
@@ -31,6 +32,9 @@ def baseline_and_binarize(
         Polynomial degree for baseline fitting (default 2).
     eva_window : int
         Sliding window size in rows for local min/max Extreme Value Averaging.
+    enable_detrending : bool
+        If True, fits polynomial baseline and uses EVA adaptive thresholding.
+        If False, uses raw global thresholding (ablation mode).
 
     Returns
     -------
@@ -50,35 +54,43 @@ def baseline_and_binarize(
 
     y_idx = np.arange(n, dtype=np.float64)
 
-    # 1. Polynomial baseline estimation
-    try:
-        deg = min(poly_degree, max(n - 1, 1))
-        coeffs = np.polyfit(y_idx, signal.astype(np.float64), deg)
-        baseline_curve = np.polyval(coeffs, y_idx).astype(np.float32)
-    except Exception:
-        w_ma = max(int(n * 0.35), 3) | 1
-        baseline_curve = np.convolve(signal, np.ones(w_ma) / w_ma, mode="same").astype(np.float32)
+    if enable_detrending:
+        # 1. Polynomial baseline estimation
+        try:
+            deg = min(poly_degree, max(n - 1, 1))
+            coeffs = np.polyfit(y_idx, signal.astype(np.float64), deg)
+            baseline_curve = np.polyval(coeffs, y_idx).astype(np.float32)
+        except Exception:
+            w_ma = max(int(n * 0.35), 3) | 1
+            baseline_curve = np.convolve(signal, np.ones(w_ma) / w_ma, mode="same").astype(np.float32)
 
-    # 2. Baseline subtraction (detrending)
-    detrended_signal = (signal - baseline_curve).astype(np.float32)
+        # 2. Baseline subtraction (detrending)
+        detrended_signal = (signal - baseline_curve).astype(np.float32)
 
-    # 3. Extreme Value Averaging (EVA) sliding-window thresholding
-    win = max(min(eva_window, n), 3)
-    half_w = win // 2
+        # 3. Extreme Value Averaging (EVA) sliding-window thresholding
+        win = max(min(eva_window, n), 3)
+        half_w = win // 2
 
-    local_max = np.zeros(n, dtype=np.float32)
-    local_min = np.zeros(n, dtype=np.float32)
+        local_max = np.zeros(n, dtype=np.float32)
+        local_min = np.zeros(n, dtype=np.float32)
 
-    for i in range(n):
-        lo = max(0, i - half_w)
-        hi = min(n, i + half_w + 1)
-        chunk = detrended_signal[lo:hi]
-        local_max[i] = chunk.max()
-        local_min[i] = chunk.min()
+        for i in range(n):
+            lo = max(0, i - half_w)
+            hi = min(n, i + half_w + 1)
+            chunk = detrended_signal[lo:hi]
+            local_max[i] = chunk.max()
+            local_min[i] = chunk.min()
 
-    threshold_curve = ((local_max + local_min) * 0.5).astype(np.float32)
+        threshold_curve = ((local_max + local_min) * 0.5).astype(np.float32)
 
-    # 4. Adaptive binarization into square wave
-    binary_array = (detrended_signal >= threshold_curve).astype(np.int8)
+        # 4. Adaptive binarization into square wave
+        binary_array = (detrended_signal >= threshold_curve).astype(np.int8)
+    else:
+        # Ablation mode: raw global mean thresholding without baseline removal
+        global_mean = float(signal.mean())
+        baseline_curve = np.full(n, global_mean, dtype=np.float32)
+        detrended_signal = (signal - global_mean).astype(np.float32)
+        threshold_curve = np.zeros(n, dtype=np.float32)
+        binary_array = (detrended_signal >= 0).astype(np.int8)
 
     return baseline_curve, detrended_signal, threshold_curve, binary_array

@@ -87,10 +87,12 @@ class OCCDemodulator:
         roi_threshold: int = 40,
         poly_degree: int = 2,
         eva_window: int = 20,
+        enable_detrending: bool = True,
     ):
         self.roi_threshold = roi_threshold
         self.poly_degree = poly_degree
         self.eva_window = eva_window
+        self.enable_detrending = enable_detrending
 
     def demodulate(self, frame: np.ndarray) -> DemodResult:
         """
@@ -120,7 +122,10 @@ class OCCDemodulator:
 
         # --- Stage 3: Baseline Correction & Adaptive Binarization ---
         baseline, detrended, threshold, binary_arr = baseline_and_binarize(
-            raw_signal, poly_degree=self.poly_degree, eva_window=self.eva_window
+            raw_signal,
+            poly_degree=self.poly_degree,
+            eva_window=self.eva_window,
+            enable_detrending=self.enable_detrending,
         )
         result.baseline_curve = baseline
         result.detrended_signal = detrended
@@ -137,7 +142,7 @@ class OCCDemodulator:
             stripe_px,
             p_offset,
             pkt_bits,
-        ) = decode_packet(frame, raw_signal, detrended, binary_arr, dist_m)
+        ) = decode_packet(frame, raw_signal, detrended, binary_arr, dist_m, roi_bbox=roi_bbox)
 
         result.status = status
         result.node_id = node_id

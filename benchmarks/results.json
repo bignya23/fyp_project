@@ -1,0 +1,195 @@
+{
+  "summary": {
+    "prr_at_12m_percent": 77.0,
+    "max_reliable_range_m": 8.0,
+    "overall_mean_latency_ms": 5.579872165573761,
+    "fps_equivalent": 179.21557525452255,
+    "false_positive_rejection_rate_percent": 100.0,
+    "total_benchmark_runtime_s": 105.34339404094499
+  },
+  "sweep_a_ber_prr_vs_distance": [
+    {
+      "distance_m": 2.0,
+      "led_px_diameter": 150.0,
+      "prr_percent": 82.0,
+      "ber": 0.18,
+      "mean_latency_ms": 7.399969967082143,
+      "successful_packets": 41,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 4.0,
+      "led_px_diameter": 75.0,
+      "prr_percent": 74.0,
+      "ber": 0.26,
+      "mean_latency_ms": 7.018115809187293,
+      "successful_packets": 37,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 6.0,
+      "led_px_diameter": 50.0,
+      "prr_percent": 72.0,
+      "ber": 0.28,
+      "mean_latency_ms": 6.1197691690176725,
+      "successful_packets": 36,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 8.0,
+      "led_px_diameter": 37.5,
+      "prr_percent": 90.0,
+      "ber": 0.1,
+      "mean_latency_ms": 6.461313348263502,
+      "successful_packets": 45,
+      "total_frames": 50,
+      "status": "RELIABLE"
+    },
+    {
+      "distance_m": 10.0,
+      "led_px_diameter": 30.0,
+      "prr_percent": 68.0,
+      "ber": 0.32,
+      "mean_latency_ms": 6.181983246933669,
+      "successful_packets": 34,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 12.0,
+      "led_px_diameter": 25.0,
+      "prr_percent": 76.0,
+      "ber": 0.24,
+      "mean_latency_ms": 6.381524133030325,
+      "successful_packets": 38,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 14.0,
+      "led_px_diameter": 21.428571428571427,
+      "prr_percent": 62.0,
+      "ber": 0.38,
+      "mean_latency_ms": 5.159879196435213,
+      "successful_packets": 31,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 16.0,
+      "led_px_diameter": 18.75,
+      "prr_percent": 34.0,
+      "ber": 0.66,
+      "mean_latency_ms": 4.317289218306541,
+      "successful_packets": 17,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 18.0,
+      "led_px_diameter": 16.666666666666668,
+      "prr_percent": 16.0,
+      "ber": 0.84,
+      "mean_latency_ms": 3.32276914967224,
+      "successful_packets": 8,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    },
+    {
+      "distance_m": 20.0,
+      "led_px_diameter": 15.0,
+      "prr_percent": 10.0,
+      "ber": 0.9,
+      "mean_latency_ms": 3.4361084178090096,
+      "successful_packets": 5,
+      "total_frames": 50,
+      "status": "DEGRADED"
+    }
+  ],
+  "sweep_b_detrending_ablation": [
+    {
+      "noise_level": 0.0,
+      "accuracy_with_detrending_percent": 54.0,
+      "accuracy_without_detrending_percent": 20.0,
+      "gain_percent": 34.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 5.0,
+      "accuracy_with_detrending_percent": 74.0,
+      "accuracy_without_detrending_percent": 16.0,
+      "gain_percent": 58.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 10.0,
+      "accuracy_with_detrending_percent": 74.0,
+      "accuracy_without_detrending_percent": 24.0,
+      "gain_percent": 50.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 15.0,
+      "accuracy_with_detrending_percent": 14.000000000000002,
+      "accuracy_without_detrending_percent": 10.0,
+      "gain_percent": 4.000000000000002,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 20.0,
+      "accuracy_with_detrending_percent": 2.0,
+      "accuracy_without_detrending_percent": 4.0,
+      "gain_percent": -2.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 25.0,
+      "accuracy_with_detrending_percent": 14.000000000000002,
+      "accuracy_without_detrending_percent": 20.0,
+      "gain_percent": -5.999999999999998,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 30.0,
+      "accuracy_with_detrending_percent": 18.0,
+      "accuracy_without_detrending_percent": 20.0,
+      "gain_percent": -2.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 35.0,
+      "accuracy_with_detrending_percent": 18.0,
+      "accuracy_without_detrending_percent": 12.0,
+      "gain_percent": 6.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 40.0,
+      "accuracy_with_detrending_percent": 16.0,
+      "accuracy_without_detrending_percent": 6.0,
+      "gain_percent": 10.0,
+      "frames_tested": 50
+    },
+    {
+      "noise_level": 45.0,
+      "accuracy_with_detrending_percent": 30.0,
+      "accuracy_without_detrending_percent": 18.0,
+      "gain_percent": 12.0,
+      "frames_tested": 50
+    }
+  ],
+  "sweep_c_headlight_rejection": {
+    "num_frames_tested": 100,
+    "rejected_frames": 100,
+    "false_positive_locks": 0,
+    "false_positive_rate_percent": 0.0,
+    "rejection_rate_percent": 100.0,
+    "mean_latency_ms": 3.543604171136394,
+    "passed": true
+  },
+  "timestamp": "2026-11-24 02:59:51",
+  "protocol_version": "1.1"
+}

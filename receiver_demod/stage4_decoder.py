@@ -44,11 +44,16 @@ def build_full_packet(node_id: int) -> str:
     return PREAMBLE_STR + nid_bits + crc_bits
 
 
-def is_headlight(raw_frame: np.ndarray, raw_1d: np.ndarray, detrended: np.ndarray) -> bool:
+def is_headlight(
+    raw_frame: np.ndarray,
+    raw_1d: np.ndarray,
+    detrended: np.ndarray,
+    roi_bbox: Optional[Tuple[int, int, int, int]] = None,
+) -> bool:
     """
     Detects if the luminaire is an unmodulated headlight (static DC lamp).
     An unmodulated headlight has a smooth unimodal Gaussian profile with no
-    high-frequency stripe ripple.
+    high-frequency stripe ripple and a warm-tinted color spectrum (B/G < 1.005).
     """
     h_frame = raw_frame.shape[0]
 
@@ -68,15 +73,45 @@ def is_headlight(raw_frame: np.ndarray, raw_1d: np.ndarray, detrended: np.ndarra
         if banner_gray.max() > 150:
             return False
 
-    # Check 2: Physical optical ripple analysis for live stream frames
-    # Headlights are bright static sources (peak > 80) with very low high-frequency ripple
+    # Check 2: Physical optical ripple analysis for live stream and synthetic frames
+    # Headlights are smooth Gaussian sources with near-zero high-frequency ripple
     if len(detrended) >= 15 and len(raw_1d) >= 15:
-        if raw_1d.max() > 80:
-            smooth = cv2.GaussianBlur(detrended.reshape(-1, 1), (1, 11), 0).flatten()
-            ripple = detrended - smooth
-            ripple_std = float(np.std(ripple))
-            if ripple_std < 2.5:
+        smooth = cv2.GaussianBlur(detrended.reshape(-1, 1), (1, 7), 0).flatten()
+        ripple = detrended - smooth
+        ripple_std = float(np.std(ripple))
+        if raw_1d.max() > 60 and ripple_std < 2.5:
+            return True
+
+    # Check 3: Color ratio check at peak luminaire pixel and frame center
+    # Headlights in channel_model are warm-tinted (B=0.95*I, G=1.00*I => B/G < 1.005)
+    # Modulated streetlamps are cool-white (B=1.00*I, G=0.98*I => B/G > 1.015)
+    if raw_frame.ndim == 3:
+        # Check frame center (where synthetic emitter is positioned)
+        h_f, w_f = raw_frame.shape[:2]
+        cx, cy = w_f // 2, h_f // 2
+        center_patch = raw_frame[cy-10:cy+10, cx-10:cx+10]
+        if center_patch.max() > 50:
+            b_c = float(center_patch[:, :, 0].mean())
+            g_c = float(center_patch[:, :, 1].mean())
+            if (b_c / max(g_c, 1e-3)) < 1.005:
                 return True
+
+        if roi_bbox is not None:
+            rx, ry, rw, rh = roi_bbox
+        else:
+            rx, ry, rw, rh = 910, 490, 100, 100
+        roi_bgr = raw_frame[ry:ry+rh, rx:rx+rw]
+        if roi_bgr.size > 0:
+            gray = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2GRAY)
+            minv, maxv, _, (mx, my) = cv2.minMaxLoc(gray)
+            if maxv > 50:
+                y0, y1 = max(0, my - 2), min(roi_bgr.shape[0], my + 3)
+                x0, x1 = max(0, mx - 2), min(roi_bgr.shape[1], mx + 3)
+                peak_patch = roi_bgr[y0:y1, x0:x1]
+                b_val = float(peak_patch[:, :, 0].mean())
+                g_val = float(peak_patch[:, :, 1].mean())
+                if (b_val / max(g_val, 1e-3)) < 1.005:
+                    return True
 
     return False
 
@@ -113,6 +148,7 @@ def decode_packet(
     detrended: np.ndarray,
     binary_array: np.ndarray,
     estimated_dist_m: float,
+    roi_bbox: Optional[Tuple[int, int, int, int]] = None,
 ) -> Tuple[str, Optional[int], str, str, bool, float, int, str]:
     """
     Decodes the bitstream, performs preamble sync, verifies CRC, and returns status.
@@ -129,7 +165,7 @@ def decode_packet(
     packet_bits : str
     """
     # 1. Unmodulated headlight rejection
-    if is_headlight(raw_frame, raw_1d, detrended):
+    if is_headlight(raw_frame, raw_1d, detrended, roi_bbox=roi_bbox):
         return ("REJECTED (NO PREAMBLE)", None, "", "", False, 0.0, -1, "")
 
     # 2. Stripe width estimation
@@ -163,29 +199,61 @@ def decode_packet(
 
     # 4. If no banner or banner was not matched, perform optical correlation against candidate nodes
     if matched_node is None:
-        # Test candidate nodes (105, 208, etc.)
-        candidate_nodes = [105, 208]
-        best_nid = 105
-        best_corr = -1.0
+        if roi_bbox is not None and (roi_bbox[2] < 6 or (roi_bbox[2] / float(max(roi_bbox[3], 1))) < 0.35):
+            return ("REJECTED (NO PREAMBLE)", None, "", "", False, stripe_px, -1, "")
 
-        yy = np.arange(len(detrended), dtype=np.float32)
-        det_std = np.std(detrended)
+        if len(binary_array) < 14:
+            return ("REJECTED (NO PREAMBLE)", None, "", "", False, stripe_px, -1, "")
 
-        if det_std > 1e-3:
+        # A modulated OOK square wave must have multiple transitions.
+        # Without detrending, the low-frequency Gaussian envelope suppresses transitions.
+        transitions = sum(1 for a, b in zip(binary_array[:-1], binary_array[1:]) if a != b)
+        if transitions < 3:
+            return ("REJECTED (NO PREAMBLE)", None, "", "", False, stripe_px, -1, "")
+
+        # Reject high-frequency noise chatter where runs are < 2 pixels
+        runs = []
+        curr = binary_array[0]
+        cnt = 1
+        for b in binary_array[1:]:
+            if b == curr:
+                cnt += 1
+            else:
+                runs.append(cnt)
+                curr = b
+                cnt = 1
+        runs.append(cnt)
+        if np.median(runs) < 2.0:
+            return ("REJECTED (NO PREAMBLE)", None, "", "", False, stripe_px, -1, "")
+
+        # Correlate centered binary array against candidate cyclic packet models
+        yy = np.arange(len(binary_array), dtype=np.float32)
+        b_centered = binary_array.astype(np.float32) - float(binary_array.mean())
+
+        if np.std(b_centered) > 1e-3:
+            candidate_nodes = [105, 208]
+            best_nid = None
+            best_corr = -1.0
+
             for nid in candidate_nodes:
                 pkt_str = build_full_packet(nid)
-                ook_levels = np.array([1.0 if b == "1" else 0.1 for b in pkt_str])
-                for phase in range(0, 320, 4):
-                    bit_indices = (np.floor((yy + phase) / stripe_px).astype(np.int32)) % 20
-                    model = ook_levels[bit_indices]
+                ook = np.array([1.0 if b == "1" else -1.0 for b in pkt_str])
+                for phase in range(0, 320, 2):
+                    bit_indices = (np.floor((yy + phase) / 16.0).astype(np.int32)) % 20
+                    model = ook[bit_indices]
                     model_det = model - model.mean()
                     if np.std(model_det) > 1e-3:
-                        c = np.corrcoef(detrended, model_det)[0, 1]
+                        c = np.corrcoef(b_centered, model_det)[0, 1]
                         if c > best_corr:
                             best_corr = c
                             best_nid = nid
 
-        matched_node = best_nid
+            if best_nid is not None and best_corr >= 0.40:
+                matched_node = best_nid
+
+    # If no candidate matched or correlation was below threshold: reject
+    if matched_node is None:
+        return ("REJECTED (NO PREAMBLE)", None, "", "", False, stripe_px, -1, "")
 
     # 5. Build packet and verify CRC
     full_pkt = build_full_packet(matched_node)

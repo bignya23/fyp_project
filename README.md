@@ -51,41 +51,75 @@ This repository hosts the simulation, demodulation, and benchmarking pipeline fo
 
 ---
 
-## 🚀 Quickstart & Setup
+## 🚀 Quickstart & Demo Commands
 
-### 1. Install Python Dependencies
+### 1. Install Dependencies
 ```bash
-python3 -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. (Optional) Build C++ Acceleration Module
-```bash
-cd receiver_demod
-mkdir build && cd build
-cmake ..
-make
-```
+### 2. Command 1: The Live Split-Screen Demo
+Open two terminal windows to run the interactive real-time IPC demonstration:
 
-### 3. Multi-Agent Development Workflow
-Before starting any coding task, read:
-1. [AGENTS.md](AGENTS.md) for collaboration and safety rules.
-2. [ARCHITECTURE.md](ARCHITECTURE.md) for the exact packet and math specification.
-3. [TASKS.md](TASKS.md) to claim an unassigned task.
-4. Record completed changes in [HANDOFF_LOG.md](HANDOFF_LOG.md).
+```bash
+# Terminal 1 — Start the Interactive Transmitter Simulator:
+python3 transmitter_sim/run_sim.py
+```
+*(Provides 5 interactive OpenCV trackbars: Node ID [0–255], Distance [2m–20m], Noise Level, Phase Shift, and Headlight Mode, streaming atomic frames to `shared/live_stream/latest_frame.png`)*
+
+```bash
+# Terminal 2 — Start the Real-Time 4-Quadrant Visual Demodulator HUD:
+python3 receiver_demod/run_receiver.py --mode live
+```
+*(Watches the IPC stream with atomic read retry and renders the 4-quadrant dashboard: (1) Camera feed + color-coded RoI bbox + FPS, (2) Zoomed RoI stripes + scanlines, (3) Live 1D waveform & binarization graph, (4) Telemetry stats)*
 
 ---
 
-## 🏗 Architecture Highlights
+### 3. Command 2: Sample Verification & Benchmark Suite
+Run the automated verification tests and generate publication-quality figures:
 
-| Parameter | Value |
-|-----------|-------|
-| Frame Resolution | 1920 × 1080 |
-| Rolling Shutter Row Readout | 29.6 µs |
-| OOK Modulation Frequency | 10 kHz |
-| Stripe Height | ~3.38 px per bit |
-| Packet Size | 20 bits |
-| CRC Polynomial | CRC-4-ITU (`x⁴ + x + 1`) |
+```bash
+# Step A: Verify all 9 sample frames (100% accuracy, 100% headlight rejection)
+python3 receiver_demod/batch_eval.py --no-fig
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for complete mathematical derivations.
+# Step B: Run the full automated benchmarking suite (Sweeps A, B, C)
+python3 benchmarks/run_benchmarks.py
+
+# Step C: Generate 300 DPI publication plots and markdown summary table
+python3 benchmarks/plot_results.py
+```
+
+Generated outputs will be saved to:
+- `docs/assets/ber_prr_vs_distance.png` (300 DPI, PRR & BER vs. Distance curves)
+- `docs/assets/detrending_ablation_snr.png` (300 DPI, With vs. Without Detrending ablation)
+- `docs/assets/summary_metrics.md` (Slide presentation markdown summary table)
+- `benchmarks/data/ber_results.csv` (Raw CSV metrics)
+- `benchmarks/results.json` (Structured JSON benchmark output)
+
+---
+
+### 4. (Optional) Single Image Inspection Mode
+```bash
+python3 receiver_demod/run_receiver.py --mode image --path shared/sample_frames/node105_3m_clean.png
+python3 receiver_demod/run_receiver.py --mode image --path shared/sample_frames/unmodulated_headlight.png
+```
+
+---
+
+## 🏗 Architecture & Protocol Contract Highlights (Protocol v1.1)
+
+| Parameter | Value | Specification & Derivation |
+|:---|:---|:---|
+| **Frame Resolution** | 1920 × 1080 px | Full HD BGR rolling-shutter CMOS sensor |
+| **Row Readout Time ($t_{\text{row}}$)** | 25.0 µs | Sensor row exposure integration period |
+| **LED Modulation Frequency ($f_{\text{LED}}$)** | 2500 Hz | High-frequency OOK (imperceptible to human eye) |
+| **Symbol Period ($T_b$)** | 400.0 µs | $1 / f_{\text{LED}}$ nominal bit period |
+| **Nominal Stripe Height ($W_{\text{bit}}$)** | 16.0 rows / bit | $W = 1 / (f_{\text{LED}} \cdot t_{\text{row}}) = 1 / (2500 \cdot 25\mu\text{s}) = 16$ px |
+| **Packet Structure** | 20 bits | `Preamble [8b]` + `Node ID [8b]` + `CRC-4 [4b]` |
+| **Preamble Pattern** | `10101010` (0xAA) | Alternating synchronization square wave |
+| **CRC Polynomial** | CRC-4-ITU (`0x13`) | $x^4 + x + 1$ over $[Preamble + Node ID]$ |
+| **Focal Length ($f$)** | 1200 px | Pinhole optical projection model |
+| **Physical LED Diameter ($D$)** | 0.25 m (25 cm) | Standard luminaire aperture |
+| **Distance-to-Aperture Scaling** | $P_{\text{px}} = \frac{D \cdot f}{d}$ | 3m → 100px, 8m → 37.5px, 10m → 30px, 18m → 16.7px |
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [shared/protocol.json](shared/protocol.json) for complete mathematical proofs.
