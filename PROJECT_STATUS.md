@@ -2,7 +2,7 @@
 
 **Milestone:** Phase 2 (Synthetic Generator + 4-Stage Demodulator & Visual HUD)  
 **Status Date:** November 24, 2026  
-**Current Phase:** Scaffolding & Agent Setup (Complete)
+**Current Phase:** Part 1 Complete — Dispatching to `@cv-demod-agent` for Part 2
 
 ---
 
@@ -21,7 +21,7 @@
 | **Monorepo Structure** | `@coordinator-agent` | Done | Yes | Root directory structure |
 | **Agent Roles & Guidelines**| `@coordinator-agent` | Done | Yes | `AGENTS.md`, `.agents/*.md` |
 | **Protocol Contract** | `@coordinator-agent` | Done | Yes | `shared/protocol.json`, `ARCHITECTURE.md` |
-| **Part 1: Frame Generator** | `@sim-agent` | Pending | No | `transmitter_sim/` |
+| **Part 1: Frame Generator** | `@sim-agent` | **DONE** | **Yes** | `transmitter_sim/channel_model.py`, `transmitter_sim/packet_encoder.py`, `transmitter_sim/run_sim.py`, `transmitter_sim/export_dataset.py` |
 | **Part 2: 4-Stage Demodulator** | `@cv-demod-agent` | Pending | No | `receiver_demod/` |
 | **Part 3: 4-Quadrant HUD** | `@cv-demod-agent` | Pending | No | `receiver_demod/` |
 | **Part 4: BER Benchmarks** | `@benchmark-agent` | Pending | No | `benchmarks/` |

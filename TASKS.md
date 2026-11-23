@@ -7,24 +7,29 @@
 ## Part 1: Synthetic Rolling-Shutter Image Generator (`/transmitter_sim`)
 *Owner: `@sim-agent`*
 
-- [ ] `[P0]` **Packet Framing Engine (`transmitter_sim/packet_encoder.py`):**
-  - Implement 8-bit Preamble (`10101010`) attachment.
-  - Implement 8-bit Node ID payload validation (`0–255`).
-  - Implement standard CRC-4 calculation (`x^4 + x + 1`) and parity appending.
-  - *Assignee:* `@sim-agent` | *Status:* `TODO`
-- [ ] `[P0]` **Rolling Shutter Frame Synthesizer (`transmitter_sim/generator.py`):**
-  - Implement row-by-row temporal scanning line time ($t(y) = t_0 + y \cdot t_{row}$).
-  - Implement Gaussian spatial intensity falloff profile across LED emitter surface.
-  - Implement distance-to-pixel projection scaling using pinhole geometry.
-  - *Assignee:* `@sim-agent` | *Status:* `TODO`
-- [ ] `[P1]` **Optical Channel & Noise Effects (`transmitter_sim/channel_effects.py`):**
-  - Add Gaussian sensor shot noise and ambient DC light baseline.
-  - Add random inter-frame phase shift / readout reset gap between frames.
-  - Add unmodulated vehicular headlight toggle.
-  - *Assignee:* `@sim-agent` | *Status:* `TODO`
-- [ ] `[P1]` **Interactive GUI / Parameter Trackbars (`transmitter_sim/interactive_gui.py`):**
-  - OpenCV sliders for: Distance (2m–30m), Ambient Noise Level, Headlight Toggle, LED Node ID.
-  - *Assignee:* `@sim-agent` | *Status:* `TODO`
+- [x] `[P0]` **Packet Framing Engine (`transmitter_sim/packet_encoder.py`):** `[DONE @sim-agent 2026-11-24]`
+  - Implemented 8-bit Preamble (`10101010`) attachment.
+  - Implemented 8-bit Node ID payload validation (`0–255`).
+  - Implemented CRC-4-ITU (`x^4 + x + 1`, poly `0x13`) shift-register algorithm and parity appending.
+  - Self-test: nodes 0, 105, 208, 255 all verify correctly.
+- [x] `[P0]` **Rolling Shutter Channel Simulator (`transmitter_sim/channel_model.py`):** `[DONE @sim-agent 2026-11-24]`
+  - Implemented `RollingShutterSimulator` class with pinhole projection, 2D Gaussian beam profile, OOK row-striping, background + clutter.
+  - Implements row-by-row temporal-to-spatial mapping using `pixels_per_bit = 1/(f_led * t_row)`.
+  - Gaussian spatial intensity profile with configurable sigma.
+  - Distance-to-pixel projection: 3m→100px, 10m→30px, 18m→16.7px.
+- [x] `[P1]` **Optical Channel & Noise Effects (integrated in `channel_model.py`):** `[DONE @sim-agent 2026-11-24]`
+  - Gaussian sensor readout noise (`sigma` = `noise_level` param).
+  - Urban night/tunnel background + dim tail-light & streetlamp clutter blobs.
+  - `unmodulated_mode` flag for headlight false-positive testing.
+  - Configurable `phase_shift_px` for async frame start simulation.
+- [x] `[P1]` **Interactive Live Demo (`transmitter_sim/run_sim.py`):** `[DONE @sim-agent 2026-11-24]`
+  - OpenCV trackbars: Node ID (0–255), Distance (2–20m), Noise Level, Phase Shift, Headlight Mode.
+  - HUD telemetry overlay (TX ID, binary packet, distance, px/bit, mode).
+  - Atomic IPC write to `shared/live_stream/latest_frame.png`.
+- [x] `[P1]` **Batch Dataset Exporter (`transmitter_sim/export_dataset.py`):** `[DONE @sim-agent 2026-11-24]`
+  - 9 labeled ground-truth frames in `shared/sample_frames/` with `ground_truth.json` manifest.
+  - 3-panel distance comparison strip (3m|10m|18m) → `docs/assets/sim_distance_comparison.png`.
+  - All CRC checks passed at export time.
 
 ---
 

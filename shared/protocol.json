@@ -1,8 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "occ-protocol-v1.0",
+  "$id": "occ-protocol-v1.1",
   "title": "OCC Packet and Channel Contract Specification",
-  "description": "Standardized framing and physical parameters shared between transmitter_sim and receiver_demod",
+  "description": "Standardized framing and physical parameters shared between transmitter_sim and receiver_demod. Version 1.1 — updated by @sim-agent 2026-11-24.",
+  "version": "1.1",
   "packet_structure": {
     "total_bits": 20,
     "fields": {
@@ -10,12 +11,15 @@
         "bit_offset": 0,
         "bit_length": 8,
         "fixed_pattern": "10101010",
+        "hex": "0xAA",
         "description": "Alternating synchronization sequence for clock recovery and frame alignment (transmitted FIRST)"
       },
       "node_id": {
         "bit_offset": 8,
         "bit_length": 8,
         "range": [0, 255],
+        "default": 105,
+        "default_binary": "01101001",
         "description": "Unique infrastructure transmitter / streetlight identifier"
       },
       "crc": {
@@ -27,16 +31,22 @@
         "initial_remainder": "0x00",
         "final_xor": "0x00",
         "input_data_bits": 16,
-        "description": "4-bit cyclic redundancy check over [preamble + node_id] (bits 0-15)"
+        "description": "4-bit CRC-4-ITU cyclic redundancy check over [preamble (8-bit) + node_id (8-bit)] = 16 input bits"
       }
-    }
+    },
+    "packet_assembly_order": "preamble[0..7] | node_id[8..15] | crc[16..19]",
+    "cyclic_repeat": true,
+    "description": "20-bit packet cycles repeatedly from top to bottom of the LED aperture rows"
   },
   "led_specs": {
-    "physical_diameter_m": 0.15,
-    "default_modulation_freq_hz": 10000,
+    "physical_diameter_m": 0.25,
+    "led_modulation_freq_hz": 2500,
+    "row_readout_time_us": 25.0,
+    "pixels_per_bit_baseline": 8,
+    "pixels_per_bit_formula": "1 / (2 * f_led * t_row_s) = 1 / (2 * 2500 * 25e-6) = 8 rows/bit",
     "ook_high_state": 1.0,
     "ook_low_state": 0.1,
-    "description": "Physical LED emitter parameters used by both transmitter and receiver for distance estimation"
+    "description": "Physical LED emitter parameters. At baseline f_led=2500Hz, t_row=25us: pixels_per_bit=8, safely above 2-pixel Nyquist limit."
   },
   "camera_and_optical_specs": {
     "frame_resolution": {
@@ -44,20 +54,36 @@
       "height": 1080
     },
     "color_format": "BGR_or_Grayscale",
+    "bit_depth": 8,
     "rolling_shutter": {
-      "readout_time_per_row_us": 29.6,
-      "frame_rate_fps": 30,
-      "total_readout_rows": 1080
+      "readout_time_per_row_us": 25.0,
+      "frame_rate_fps": 40,
+      "total_readout_rows": 1080,
+      "description": "t_row=25us => f_sample=40kHz (1/t_row). Full frame readout time = 1080 * 25us = 27ms."
     },
     "pinhole_model": {
-      "focal_length_mm": 4.0,
-      "pixel_pitch_um": 1.4,
-      "description": "Default pinhole camera parameters for distance-to-pixel projection"
+      "focal_length_px": 1200,
+      "physical_led_diameter_m": 0.25,
+      "projection_formula": "P_px = (physical_diameter_m * focal_length_px) / distance_m",
+      "examples": {
+        "3m":  "P = 0.25 * 1200 / 3  = 100 px",
+        "10m": "P = 0.25 * 1200 / 10 = 30 px",
+        "18m": "P = 0.25 * 1200 / 18 ≈ 16.7 px"
+      },
+      "description": "Simplified pinhole model using focal_length_px directly (no sensor pixel pitch needed when focal length is in pixel units)"
     },
     "modulation": {
       "type": "OOK",
-      "symbol_rate_hz": 10000,
-      "min_stripe_height_px": 3.0
+      "symbol_rate_hz": 2500,
+      "min_stripe_height_px": 8,
+      "nyquist_min_px": 2,
+      "description": "On-Off Keying. At 2500Hz modulation and 25us row time: 8 pixel rows per bit symbol."
     }
+  },
+  "ipc": {
+    "live_stream_frame_path": "shared/live_stream/latest_frame.png",
+    "sample_frames_dir": "shared/sample_frames/",
+    "ground_truth_manifest": "shared/sample_frames/ground_truth.json",
+    "description": "File-based IPC paths for inter-agent and live-demo frame passing. Paths are relative to the repository root."
   }
 }
