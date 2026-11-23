@@ -30,6 +30,7 @@
 
 ## 3. Currently In Progress
 - Setup and scaffolding finalized.
+- **Repository audit completed** — 1 critical protocol inconsistency fixed, 5 structural gaps filled, 8 quality improvements applied.
 - Ready to dispatch initial task assignments to `@sim-agent` (Generator implementation) and `@cv-demod-agent` (Demodulator skeleton).
 
 ---

@@ -52,8 +52,19 @@ shared/samples/*
 *.avi
 *.csv
 
+# Logs and serialized arrays
+*.log
+*.npy
+*.npz
+
 # IDE / OS configs
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documentation build artifacts
+docs/_build/
+docs/*.aux
+docs/*.toc
+docs/*.out

@@ -1,28 +1,42 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "occ-protocol-v1.0",
   "title": "OCC Packet and Channel Contract Specification",
   "description": "Standardized framing and physical parameters shared between transmitter_sim and receiver_demod",
   "packet_structure": {
     "total_bits": 20,
     "fields": {
       "preamble": {
+        "bit_offset": 0,
         "bit_length": 8,
         "fixed_pattern": "10101010",
-        "description": "Alternating synchronization sequence for clock recovery and frame alignment"
+        "description": "Alternating synchronization sequence for clock recovery and frame alignment (transmitted FIRST)"
       },
       "node_id": {
+        "bit_offset": 8,
         "bit_length": 8,
         "range": [0, 255],
         "description": "Unique infrastructure transmitter / streetlight identifier"
       },
       "crc": {
+        "bit_offset": 16,
         "bit_length": 4,
         "polynomial": "0x13",
         "polynomial_bin": "10011",
         "name": "CRC-4-ITU",
-        "description": "4-bit cyclic redundancy check over [preamble + node_id]"
+        "initial_remainder": "0x00",
+        "final_xor": "0x00",
+        "input_data_bits": 16,
+        "description": "4-bit cyclic redundancy check over [preamble + node_id] (bits 0-15)"
       }
     }
+  },
+  "led_specs": {
+    "physical_diameter_m": 0.15,
+    "default_modulation_freq_hz": 10000,
+    "ook_high_state": 1.0,
+    "ook_low_state": 0.1,
+    "description": "Physical LED emitter parameters used by both transmitter and receiver for distance estimation"
   },
   "camera_and_optical_specs": {
     "frame_resolution": {
@@ -34,6 +48,11 @@
       "readout_time_per_row_us": 29.6,
       "frame_rate_fps": 30,
       "total_readout_rows": 1080
+    },
+    "pinhole_model": {
+      "focal_length_mm": 4.0,
+      "pixel_pitch_um": 1.4,
+      "description": "Default pinhole camera parameters for distance-to-pixel projection"
     },
     "modulation": {
       "type": "OOK",

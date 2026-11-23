@@ -79,3 +79,11 @@
 - [ ] `[P0]` **End-to-End Pipeline Smoke Test:**
   - Pipe generated synthetic frame into receiver demodulator and verify 100% CRC pass rate under nominal conditions.
   - *Assignee:* `@coordinator-agent` | *Status:* `TODO`
+- [ ] `[P1]` **Test Infrastructure Setup:**
+  - Create `conftest.py` at repo root with shared pytest fixtures (sample packets, frame generators).
+  - Add unit test directories: `transmitter_sim/tests/`, `receiver_demod/tests/`, `benchmarks/tests/`.
+  - *Assignee:* `@coordinator-agent` | *Status:* `TODO`
+- [ ] `[P2]` **Protocol Schema Validation:**
+  - Create a JSON Schema in `shared/schemas/` to formally validate `protocol.json` structure.
+  - Add a validation test that both `@sim-agent` and `@cv-demod-agent` modules load and validate the same contract.
+  - *Assignee:* `@coordinator-agent` | *Status:* `TODO`
